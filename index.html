@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Trials Survivors 浏览器本地存档编辑器。存档不会上传服务器。" />
+  <title>Trials Survivors Save Editor</title>
+  <style>
+:root {
+  --bg: #070914;
+  --panel: rgba(17, 20, 39, 0.88);
+  --panel-2: rgba(23, 27, 51, 0.8);
+  --line: rgba(157, 170, 255, 0.16);
+  --line-strong: rgba(157, 170, 255, 0.28);
+  --text: #f3f4ff;
+  --muted: #9ca4c7;
+  --accent: #8f7cff;
+  --accent-2: #53d6ff;
+  --good: #54e6a5;
+  --warn: #ffcf70;
+  --danger: #ff7e9d;
+  --shadow: 0 24px 80px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--bg); }
+body {
+  margin: 0; min-height: 100vh; color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(89, 74, 255, .18), transparent 35%),
+    radial-gradient(circle at 90% 18%, rgba(52, 190, 255, .12), transparent 28%),
+    linear-gradient(180deg, #090b19 0%, #070914 55%, #050711 100%);
+  overflow-x: hidden;
+}
+body::before { content:""; position:fixed; inset:0; pointer-events:none; background-image:linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size:48px 48px; mask-image:linear-gradient(to bottom,black,transparent 75%); }
+.stars { position: fixed; inset: 0; pointer-events: none; opacity:.35; background-repeat:repeat; }
+.stars-a { background-image: radial-gradient(circle, #fff 0 1px, transparent 1.2px); background-size: 79px 79px; background-position: 12px 20px; }
+.stars-b { background-image: radial-gradient(circle, #8adfff 0 1px, transparent 1.2px); background-size: 137px 137px; background-position: 60px 40px; opacity:.2; }
+.topbar { height:72px; display:flex; align-items:center; justify-content:space-between; max-width:1320px; padding:0 28px; margin:auto; position:relative; z-index:2; }
+.brand { display:flex; align-items:center; gap:12px; }
+.brand-mark { width:38px; height:38px; border:1px solid var(--line-strong); border-radius:12px; display:grid; place-items:center; font-weight:800; font-size:13px; letter-spacing:.06em; background:linear-gradient(135deg,rgba(143,124,255,.25),rgba(83,214,255,.08)); box-shadow:inset 0 0 20px rgba(143,124,255,.12); }
+.brand-title { font-weight:750; letter-spacing:.01em; }
+.brand-subtitle { color:var(--muted); font-size:12px; margin-top:2px; }
+.ghost-link { color:var(--muted); text-decoration:none; border:1px solid var(--line); padding:9px 14px; border-radius:10px; font-size:13px; }
+.ghost-link:hover { color:var(--text); border-color:var(--line-strong); }
+.shell { max-width:1320px; margin:auto; padding:24px 28px 72px; position:relative; z-index:1; }
+.hero { text-align:center; padding:54px 0 36px; }
+.eyebrow, .module-kicker { color:var(--accent-2); font-size:11px; letter-spacing:.18em; font-weight:800; }
+h1 { margin:14px auto 18px; font-size:clamp(38px,6vw,72px); line-height:1.04; letter-spacing:-.045em; max-width:950px; }
+h1 span { color:transparent; background:linear-gradient(95deg,var(--accent),var(--accent-2)); background-clip:text; -webkit-background-clip:text; }
+.hero > p { margin:0 auto; max-width:760px; color:var(--muted); font-size:16px; line-height:1.8; }
+.dropzone { max-width:820px; margin:36px auto 18px; min-height:250px; border:1px dashed rgba(143,124,255,.55); border-radius:26px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:linear-gradient(145deg,rgba(143,124,255,.09),rgba(83,214,255,.025)); box-shadow:var(--shadow), inset 0 0 70px rgba(143,124,255,.03); transition:.2s ease; outline:none; }
+.dropzone.drag, .dropzone:focus { transform:translateY(-2px); border-color:var(--accent-2); background:linear-gradient(145deg,rgba(143,124,255,.14),rgba(83,214,255,.06)); }
+.drop-icon { width:58px; height:58px; border-radius:18px; display:grid; place-items:center; font-size:28px; background:rgba(143,124,255,.13); border:1px solid var(--line); color:#d9d4ff; }
+.dropzone strong { font-size:18px; margin-top:4px; }
+.dropzone span { color:var(--muted); font-size:13px; }
+code { color:#cad8ff; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.05); padding:2px 5px; border-radius:5px; }
+.drop-actions { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; justify-content:center; }
+.btn { appearance:none; border:none; border-radius:11px; padding:11px 16px; color:var(--text); font-weight:650; cursor:pointer; font-size:13px; transition:.16s ease; border:1px solid transparent; }
+.btn:hover { transform:translateY(-1px); }
+.btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+.btn.primary { background:linear-gradient(135deg,#7d68f7,#4daee7); box-shadow:0 8px 26px rgba(104,92,245,.22); }
+.btn.secondary { background:rgba(255,255,255,.045); border-color:var(--line); }
+.btn.secondary:hover { border-color:var(--line-strong); background:rgba(255,255,255,.07); }
+.btn.danger-text { background:transparent; color:var(--danger); border:1px solid rgba(255,126,157,.15); }
+.full { width:100%; }
+.privacy-row { display:flex; justify-content:center; gap:22px; flex-wrap:wrap; color:#7f88ab; font-size:12px; }
+.workspace { display:grid; grid-template-columns:300px minmax(0,1fr); border:1px solid var(--line); border-radius:24px; overflow:hidden; min-height:700px; background:rgba(8,11,23,.72); box-shadow:var(--shadow); backdrop-filter:blur(18px); margin-top:16px; }
+.hidden { display:none !important; }
+.sidebar { border-right:1px solid var(--line); background:rgba(11,14,29,.72); display:flex; flex-direction:column; min-height:700px; }
+.sidebar-head { padding:22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); }
+.sidebar-title { font-weight:750; font-size:14px; }
+.sidebar-sub { color:var(--muted); font-size:12px; margin-top:4px; }
+.icon-btn { width:34px; height:34px; border-radius:10px; border:1px solid var(--line); color:var(--text); background:rgba(255,255,255,.035); cursor:pointer; font-size:18px; }
+.file-list { padding:10px; flex:1; overflow:auto; }
+.file-item { width:100%; text-align:left; padding:12px; border:1px solid transparent; background:transparent; color:var(--text); border-radius:12px; cursor:pointer; display:flex; gap:11px; align-items:flex-start; }
+.file-item:hover { background:rgba(255,255,255,.035); }
+.file-item.active { background:rgba(143,124,255,.1); border-color:rgba(143,124,255,.2); }
+.file-icon { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:rgba(143,124,255,.1); color:#c8c0ff; flex:0 0 auto; font-size:13px; font-weight:800; }
+.file-info { min-width:0; flex:1; }
+.file-label { font-size:13px; font-weight:700; }
+.file-name { font-size:10px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:3px; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--warn); margin-top:5px; box-shadow:0 0 10px rgba(255,207,112,.6); }
+.sidebar-footer { padding:14px; border-top:1px solid var(--line); display:grid; gap:8px; }
+.editor-pane { min-width:0; }
+.editor-head { min-height:110px; padding:24px 28px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:24px; }
+.editor-head h2 { margin:5px 0 0; font-size:25px; letter-spacing:-.025em; }
+.filename { color:var(--muted); font-size:11px; margin-top:7px; word-break:break-all; }
+.editor-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end; }
+.badge { font-size:11px; border-radius:99px; padding:6px 9px; color:#241d00; background:var(--warn); font-weight:800; }
+.editor-body { padding:26px 28px 34px; }
+.section-title { margin:0 0 14px; font-size:13px; color:#cfd4ec; font-weight:800; letter-spacing:.02em; }
+.card-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:24px; }
+.card { background:var(--panel-2); border:1px solid var(--line); border-radius:16px; padding:17px; }
+.card h3 { margin:0 0 4px; font-size:15px; }
+.card .sub { color:var(--muted); font-size:11px; margin-bottom:14px; }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px 14px; }
+.field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.field label { color:#aab2d1; font-size:11px; font-weight:700; }
+input[type="number"], input[type="text"], select, textarea { width:100%; border:1px solid var(--line); background:rgba(4,7,17,.65); color:var(--text); border-radius:10px; padding:10px 11px; outline:none; font:inherit; font-size:13px; }
+input:focus, select:focus, textarea:focus { border-color:rgba(83,214,255,.55); box-shadow:0 0 0 3px rgba(83,214,255,.07); }
+.switch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:42px; }
+.switch-row + .switch-row { border-top:1px solid rgba(255,255,255,.045); }
+.switch-row .desc strong { display:block; font-size:13px; }
+.switch-row .desc span { color:var(--muted); font-size:10px; }
+.switch { position:relative; width:42px; height:24px; flex:0 0 auto; }
+.switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; inset:0; background:#242943; border:1px solid var(--line); border-radius:99px; cursor:pointer; transition:.2s; }
+.slider::before { content:""; position:absolute; width:17px; height:17px; left:3px; top:2px; border-radius:50%; background:#bbc1d8; transition:.2s; }
+.switch input:checked + .slider { background:rgba(84,230,165,.24); border-color:rgba(84,230,165,.45); }
+.switch input:checked + .slider::before { transform:translateX(17px); background:var(--good); }
+.toolbar { display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin:0 0 14px; }
+.id-list { display:grid; gap:8px; }
+.id-row { display:flex; gap:8px; align-items:center; }
+.id-row code { flex:1; padding:10px 12px; border-radius:10px; background:rgba(4,7,17,.45); overflow:auto; }
+.mini-btn { border:1px solid var(--line); color:var(--muted); background:rgba(255,255,255,.035); border-radius:8px; cursor:pointer; padding:7px 9px; }
+.mini-btn:hover { color:var(--text); border-color:var(--line-strong); }
+.notice { border:1px solid rgba(83,214,255,.18); background:rgba(83,214,255,.045); color:#b9c5e3; border-radius:13px; padding:13px 15px; line-height:1.65; font-size:12px; }
+.notice.warning { border-color:rgba(255,207,112,.2); background:rgba(255,207,112,.05); color:#ded3b6; }
+.inventory-grid { display:grid; grid-template-columns:repeat(6,minmax(46px,1fr)); gap:9px; max-width:650px; }
+.inv-cell { aspect-ratio:1; border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,.025); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; position:relative; }
+.inv-cell.unlocked { border-color:rgba(84,230,165,.35); background:rgba(84,230,165,.055); }
+.inv-cell .coord { color:var(--muted); font-size:9px; }
+.inv-cell .state { font-size:11px; font-weight:800; }
+.inv-cell button { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.inv-cell.readonly { opacity:.85; }
+.advanced { border-top:1px solid var(--line); }
+.advanced summary { padding:18px 28px; cursor:pointer; color:#b8c0de; font-size:13px; }
+.advanced-inner { padding:0 28px 28px; }
+#rawJson { margin-top:12px; min-height:340px; resize:vertical; font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; line-height:1.55; font-size:11px; }
+.row-actions { margin-top:10px; display:flex; justify-content:flex-end; gap:8px; }
+.guide { margin-top:52px; }
+.guide > h2 { font-size:28px; margin-bottom:18px; }
+.steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.steps article { border:1px solid var(--line); background:rgba(255,255,255,.025); border-radius:15px; padding:18px; }
+.steps article > span { color:var(--accent-2); font-size:10px; font-weight:900; letter-spacing:.15em; }
+.steps h3 { margin:10px 0 7px; font-size:14px; }
+.steps p { color:var(--muted); line-height:1.7; font-size:11px; margin:0; }
+footer { max-width:1320px; margin:auto; padding:20px 28px 36px; border-top:1px solid rgba(255,255,255,.055); color:#707895; font-size:10px; display:flex; justify-content:space-between; gap:10px; position:relative; z-index:1; }
+.toast { position:fixed; left:50%; bottom:28px; transform:translate(-50%,18px); background:#eef2ff; color:#11152a; padding:11px 16px; border-radius:11px; font-size:12px; font-weight:700; opacity:0; pointer-events:none; transition:.22s ease; z-index:10; box-shadow:0 15px 60px rgba(0,0,0,.4); }
+.toast.show { opacity:1; transform:translate(-50%,0); }
+@media (max-width: 900px) {
+  .workspace { grid-template-columns:1fr; }
+  .sidebar { min-height:auto; border-right:0; border-bottom:1px solid var(--line); }
+  .file-list { display:flex; overflow:auto; }
+  .file-item { min-width:220px; }
+  .sidebar-footer { display:none; }
+  .card-grid, .steps { grid-template-columns:1fr 1fr; }
+  .editor-head { align-items:flex-start; flex-direction:column; }
+  .editor-actions { justify-content:flex-start; }
+}
+@media (max-width: 620px) {
+  .shell { padding-left:15px; padding-right:15px; }
+  .topbar { padding:0 15px; }
+  .hero { padding-top:32px; }
+  h1 { font-size:42px; }
+  .dropzone { min-height:280px; padding:24px 15px; }
+  .card-grid, .steps, .form-grid { grid-template-columns:1fr; }
+  .editor-body, .editor-head { padding-left:17px; padding-right:17px; }
+  .advanced summary, .advanced-inner { padding-left:17px; padding-right:17px; }
+  .editor-actions .btn { flex:1; min-width:130px; }
+  .inventory-grid { gap:5px; }
+  .inv-cell { border-radius:8px; }
+  footer { flex-direction:column; padding-left:15px; padding-right:15px; }
+}
+
+</style>
+</head>
+<body>
+  <div class="stars stars-a"></div>
+  <div class="stars stars-b"></div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">TS</div>
+      <div>
+        <div class="brand-title">Trials Survivors</div>
+        <div class="brand-subtitle">Save Editor · 本地处理</div>
+      </div>
+    </div>
+    <a class="ghost-link" href="https://github.com/worsteggs/trials-survivors-save-editor" target="_blank" rel="noreferrer">GitHub</a>
+  </header>
+
+  <main class="shell">
+    <section class="hero" id="hero">
+      <div class="eyebrow">LOCAL-FIRST · NO UPLOAD</div>
+      <h1>把存档拖进来，<span>改完直接下载替换。</span></h1>
+      <p>编辑过程完全在浏览器内完成，不会把你的存档发送到服务器。支持 Trials Survivors 当前观察到的 XOR JSON 格式与 Inventory 子目录。</p>
+
+      <div class="dropzone" id="dropzone" tabindex="0">
+        <div class="drop-icon">⇧</div>
+        <strong>拖放存档文件到这里</strong>
+        <span>支持 <code>STRUCT*.json</code>、<code>*.json.bak</code>、<code>Inventory/inventory_*.json</code></span>
+        <div class="drop-actions">
+          <button class="btn primary" id="pickFilesBtn">选择文件</button>
+          <button class="btn secondary" id="pickFolderBtn">选择整个存档目录</button>
+        </div>
+        <input id="fileInput" type="file" multiple hidden />
+        <input id="folderInput" type="file" webkitdirectory directory multiple hidden />
+      </div>
+      <div class="privacy-row">
+        <span>◉ 纯前端处理</span><span>◉ 自动识别模块</span><span>◉ 保留原文件名下载</span><span>◉ 可下载原始备份</span>
+      </div>
+    </section>
+
+    <section class="workspace hidden" id="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div>
+            <div class="sidebar-title">已载入文件</div>
+            <div class="sidebar-sub" id="fileCount">0 个文件</div>
+          </div>
+          <button class="icon-btn" id="addMoreBtn" title="继续添加文件">＋</button>
+        </div>
+        <div id="fileList" class="file-list"></div>
+        <div class="sidebar-footer">
+          <button class="btn secondary full" id="downloadBackupBtn">下载当前原始备份</button>
+          <button class="btn danger-text full" id="clearBtn">清空并重新开始</button>
+        </div>
+      </aside>
+
+      <section class="editor-pane">
+        <div class="editor-head">
+          <div>
+            <div class="module-kicker" id="moduleKicker">MODULE</div>
+            <h2 id="moduleTitle">选择一个存档模块</h2>
+            <div class="filename" id="filename"></div>
+          </div>
+          <div class="editor-actions">
+            <span id="dirtyBadge" class="badge hidden">已修改</span>
+            <button class="btn secondary" id="resetCurrentBtn">撤销当前文件修改</button>
+            <button class="btn primary" id="downloadCurrentBtn">下载修改后的文件</button>
+          </div>
+        </div>
+
+        <div id="editorBody" class="editor-body"></div>
+
+        <details class="advanced" id="advancedPanel">
+          <summary>高级模式：查看 / 编辑解密后的 JSON</summary>
+          <div class="advanced-inner">
+            <div class="notice warning">高级模式不会帮你验证 ID 是否真实存在。修改 <code>*Id</code>、引用结构或数组对象前请保留备份。</div>
+            <textarea id="rawJson" spellcheck="false"></textarea>
+            <div class="row-actions">
+              <button class="btn secondary" id="formatJsonBtn">格式化</button>
+              <button class="btn primary" id="applyJsonBtn">应用 JSON</button>
+            </div>
+          </div>
+        </details>
+      </section>
+    </section>
+
+    <section class="guide">
+      <h2>使用方法</h2>
+      <div class="steps">
+        <article><span>01</span><h3>退出游戏并备份</h3><p>先完全退出 Trials Survivors，复制整个 SteamID 存档目录。Steam Cloud 可能在游戏运行时覆盖你的修改。</p></article>
+        <article><span>02</span><h3>载入对应文件</h3><p>只想改职业就上传职业 STRUCT；想一次查看所有模块就选择整个存档目录，包括 <code>Inventory</code> 子目录。</p></article>
+        <article><span>03</span><h3>修改并下载</h3><p>下载文件会保持原文件名。若浏览器自动追加 “(1)”，替换前请恢复成原文件名。</p></article>
+        <article><span>04</span><h3>替换原文件</h3><p>把下载后的文件放回原位置。建议主文件和对应 <code>.bak</code> 分开处理，不要同时覆盖唯一备份。</p></article>
+      </div>
+      <div class="notice">当前版本只对已经从样本中确认过的结构提供快捷编辑。未知遗物/物品对象仍保留在高级 JSON 中，避免生成错误结构。</div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Unofficial community tool · Not affiliated with Angry Wisp.</span>
+    <span>Always keep an independent backup.</span>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+  <script type="module">
+const XOR_KEY = new Uint8Array([0x42, 0x13, 0x99, 0x7a]);
+
+function xorBytes(bytes) {
+  const out = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i += 1) out[i] = bytes[i] ^ XOR_KEY[i % XOR_KEY.length];
+  return out;
+}
+
+function decodeSaveBytes(bytes) {
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const attempts = [
+    { mode: 'xor', bytes: xorBytes(bytes) },
+    { mode: 'plain', bytes },
+  ];
+  for (const attempt of attempts) {
+    try {
+      const text = decoder.decode(attempt.bytes);
+      const value = JSON.parse(text);
+      return { mode: attempt.mode, value, text };
+    } catch (_) {
+      // Try the next decoding mode.
+    }
+  }
+  throw new Error('无法识别该文件：既不是 Trials Survivors XOR JSON，也不是普通 JSON。');
+}
+
+function encodeSaveValue(value, mode = 'xor') {
+  const encoded = new TextEncoder().encode(JSON.stringify(value));
+  return mode === 'xor' ? xorBytes(encoded) : encoded;
+}
+
+function detectModule(value, filename = '') {
+  const lower = filename.toLowerCase();
+  if (lower.includes('inventory_') && value?._cells && value?.references) return 'inventory';
+  const data = value?.data;
+  if (data?.classProgressions) return 'classes';
+  if (data?.difficultyProgressions) return 'difficulty';
+  if (data?.mapProgressions) return 'maps';
+  if (data?.ownedRelics && data?.presets) return 'relics';
+  if (data?.DiscoveredSkillIds) return 'skills';
+  if (data?.unlockedAchievementIds && data?.statCounters) return 'achievements';
+  if (typeof data?.firstGame === 'boolean' && 'onboardingRelicsCompleted' in data) return 'onboarding';
+  if (typeof data?.hasActiveRun === 'boolean' && data?.runStats) return 'run';
+  return 'raw';
+}
+
+const MODULE_META = {
+  classes: { label: '职业与全局成长', icon: '✦' },
+  difficulty: { label: '难度进度', icon: '◆' },
+  maps: { label: '地图进度', icon: '⌖' },
+  relics: { label: '遗物与预设', icon: '◇' },
+  skills: { label: '已发现技能', icon: '✧' },
+  achievements: { label: '成就与统计', icon: '★' },
+  onboarding: { label: '教程状态', icon: '◈' },
+  run: { label: '当前 Run 快照', icon: '▶' },
+  inventory: { label: 'Inventory 网格', icon: '▦' },
+  raw: { label: '高级 JSON', icon: '{}' },
+};
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function sameJson(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function inventoryCellState(inventory, cell) {
+  const refs = inventory?.references?.RefIds || [];
+  const refMap = new Map(refs.map((r) => [r.rid, r]));
+  const lockRef = (cell?._properties || [])
+    .map((p) => refMap.get(p.rid))
+    .find((r) => r?.type?.class === 'CellPropertyLocked');
+  if (!lockRef) return { unlocked: true, editable: false, ref: null };
+  return { unlocked: !Boolean(lockRef.data?.isLocked), editable: true, ref: lockRef };
+}
+
+function setInventoryCellUnlocked(inventory, cell, unlocked) {
+  const state = inventoryCellState(inventory, cell);
+  if (!state.editable || !state.ref) return false;
+  state.ref.data = state.ref.data || {};
+  state.ref.data.isLocked = !Boolean(unlocked);
+  return true;
+}
+
+function unlockAllInventoryCells(inventory) {
+  let changed = 0;
+  const refs = inventory?.references?.RefIds || [];
+  for (const ref of refs) {
+    if (ref?.type?.class === 'CellPropertyLocked') {
+      ref.data = ref.data || {};
+      if (ref.data.isLocked !== false) changed += 1;
+      ref.data.isLocked = false;
+    }
+  }
+  return changed;
+}
+
+
+
+
+const els = Object.fromEntries([
+  'hero','workspace','dropzone','fileInput','folderInput','pickFilesBtn','pickFolderBtn','addMoreBtn',
+  'fileList','fileCount','moduleKicker','moduleTitle','filename','editorBody','dirtyBadge','rawJson',
+  'downloadCurrentBtn','downloadBackupBtn','resetCurrentBtn','clearBtn','formatJsonBtn','applyJsonBtn','toast'
+].map((id) => [id, document.getElementById(id)]));
+
+const state = { files: [], currentId: null };
+const moduleNames = MODULE_META;
+
+function toast(message) {
+  els.toast.textContent = message;
+  els.toast.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+}
+
+function getCurrent() { return state.files.find((f) => f.id === state.currentId) || null; }
+function setDirty(file) { file.dirty = !sameJson(file.value, file.originalValue); renderSidebar(); updateHeader(file); }
+function syncRaw(file = getCurrent()) { if (file) els.rawJson.value = JSON.stringify(file.value, null, 2); }
+
+async function ingestFiles(fileList) {
+  const files = [...fileList].filter((f) => !f.name.startsWith('._') && f.name !== '.DS_Store');
+  let added = 0, failed = 0;
+  for (const file of files) {
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const decoded = decodeSaveBytes(bytes);
+      const id = `${file.webkitRelativePath || file.name}:${file.size}:${file.lastModified}:${Math.random()}`;
+      const item = {
+        id,
+        name: file.name,
+        path: file.webkitRelativePath || file.name,
+        rawBytes: bytes,
+        mode: decoded.mode,
+        value: decoded.value,
+        originalValue: deepClone(decoded.value),
+        module: detectModule(decoded.value, file.name),
+        dirty: false,
+      };
+      state.files.push(item); added += 1;
+    } catch (error) {
+      console.warn('Skip file', file.name, error); failed += 1;
+    }
+  }
+  if (added) {
+    state.currentId = state.currentId || state.files[0].id;
+    els.hero.classList.add('hidden');
+    els.workspace.classList.remove('hidden');
+    renderAll();
+    toast(`已载入 ${added} 个存档文件${failed ? `，跳过 ${failed} 个非存档文件` : ''}`);
+  } else toast('没有识别到可编辑的 JSON 存档');
+}
+
+function renderAll() { renderSidebar(); renderCurrent(); }
+function renderSidebar() {
+  els.fileCount.textContent = `${state.files.length} 个文件`;
+  els.fileList.innerHTML = '';
+  for (const file of state.files) {
+    const meta = moduleNames[file.module] || moduleNames.raw;
+    const button = document.createElement('button');
+    button.className = `file-item ${file.id === state.currentId ? 'active' : ''}`;
+    button.innerHTML = `<span class="file-icon">${escapeHtml(meta.icon)}</span><span class="file-info"><span class="file-label">${escapeHtml(meta.label)}</span><span class="file-name">${escapeHtml(file.path)}</span></span>${file.dirty ? '<span class="dot"></span>' : ''}`;
+    button.onclick = () => { state.currentId = file.id; renderAll(); };
+    els.fileList.appendChild(button);
+  }
+}
+
+function updateHeader(file) {
+  const meta = moduleNames[file.module] || moduleNames.raw;
+  els.moduleKicker.textContent = `${file.mode.toUpperCase()} JSON · ${file.value?.version !== undefined ? `VERSION ${file.value.version}` : 'STRUCT DATA'}`;
+  els.moduleTitle.textContent = meta.label;
+  els.filename.textContent = file.path;
+  els.dirtyBadge.classList.toggle('hidden', !file.dirty);
+  els.downloadCurrentBtn.disabled = false;
+  els.downloadBackupBtn.disabled = false;
+}
+
+function renderCurrent() {
+  const file = getCurrent();
+  if (!file) return;
+  updateHeader(file); syncRaw(file);
+  const renderer = renderers[file.module] || renderers.raw;
+  renderer(file);
+}
+
+function controlNumber(label, value, onChange, opts = {}) {
+  const wrap = document.createElement('div'); wrap.className = 'field';
+  const id = `n-${Math.random().toString(36).slice(2)}`;
+  wrap.innerHTML = `<label for="${id}">${escapeHtml(label)}</label>`;
+  const input = document.createElement('input'); input.id = id; input.type = 'number'; input.value = Number.isFinite(Number(value)) ? value : 0;
+  if (opts.step) input.step = opts.step;
+  if (opts.min !== undefined) input.min = opts.min;
+  input.addEventListener('change', () => { onChange(Number(input.value)); onValueChanged(); });
+  wrap.appendChild(input); return wrap;
+}
+function controlText(label, value, onChange) {
+  const wrap = document.createElement('div'); wrap.className='field';
+  wrap.innerHTML = `<label>${escapeHtml(label)}</label>`;
+  const input=document.createElement('input'); input.type='text'; input.value=value ?? '';
+  input.addEventListener('change',()=>{onChange(input.value);onValueChanged();}); wrap.appendChild(input); return wrap;
+}
+function switchRow(title, subtitle, checked, onChange) {
+  const row=document.createElement('div'); row.className='switch-row';
+  const desc=document.createElement('div'); desc.className='desc'; desc.innerHTML=`<strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle || '')}</span>`;
+  const lab=document.createElement('label'); lab.className='switch';
+  const input=document.createElement('input'); input.type='checkbox'; input.checked=Boolean(checked);
+  const slider=document.createElement('span'); slider.className='slider';
+  input.onchange=()=>{onChange(input.checked);onValueChanged();}; lab.append(input,slider); row.append(desc,lab); return row;
+}
+function card(title, sub='') { const c=document.createElement('div'); c.className='card'; c.innerHTML=`<h3>${escapeHtml(title)}</h3>${sub?`<div class="sub">${escapeHtml(sub)}</div>`:''}`; return c; }
+function sectionTitle(text) { const h=document.createElement('div'); h.className='section-title'; h.textContent=text; return h; }
+function onValueChanged(rerender=false) { const f=getCurrent(); if(!f)return; setDirty(f); syncRaw(f); if(rerender) renderCurrent(); }
+function actionButton(label, handler, cls='secondary') { const b=document.createElement('button'); b.className=`btn ${cls}`; b.textContent=label; b.onclick=handler; return b; }
+
+const renderers = {
+  classes(file) {
+    const d=file.value.data; const root=document.createDocumentFragment();
+    const tools=document.createElement('div'); tools.className='toolbar';
+    tools.append(actionButton('解锁全部职业',()=>{d.classProgressions.forEach(x=>x._unlocked=true);onValueChanged(true);toast('已把存档中现有职业全部设为解锁');},'primary'));
+    const setAll=document.createElement('div'); setAll.className='field'; setAll.style.maxWidth='190px';
+    const lv=document.createElement('input'); lv.type='number'; lv.min='1'; lv.placeholder='统一设置职业等级'; setAll.appendChild(lv); tools.appendChild(setAll);
+    tools.append(actionButton('应用等级到全部职业',()=>{const v=Number(lv.value); if(!Number.isFinite(v)||v<1)return toast('请输入有效等级');d.classProgressions.forEach(x=>x._level=v);onValueChanged(true);},'secondary'));
+    root.append(tools);
+    const summary=card('全局成长','这些字段属于永久进度，而不是当前一局 Run。'); const fg=document.createElement('div');fg.className='form-grid';
+    fg.append(controlNumber('Global Level',d.globalLevel,v=>d.globalLevel=v,{min:0}),controlNumber('Global Current XP',d.globalCurrentXp,v=>d.globalCurrentXp=v,{min:0}),controlNumber('Current Class ID',d.currentClassID,v=>d.currentClassID=v)); summary.append(fg); root.append(summary);
+    root.append(sectionTitle(`职业进度 · ${d.classProgressions.length} 个条目`)); const grid=document.createElement('div');grid.className='card-grid';
+    d.classProgressions.forEach((cp,i)=>{const c=card(`职业 ${i+1}`,`Class ID: ${cp._classId}`);c.append(switchRow('已解锁',`Skill ID: ${cp._currentSkillId || 0}`,cp._unlocked,v=>cp._unlocked=v)); const g=document.createElement('div');g.className='form-grid';g.style.marginTop='12px';g.append(controlNumber('Level',cp._level,v=>cp._level=v,{min:0}),controlNumber('Current XP',cp._currentXp,v=>cp._currentXp=v,{min:0}));c.append(g);grid.append(c);}); root.append(grid);
+    els.editorBody.replaceChildren(root);
+  },
+  difficulty(file) {
+    const d=file.value.data, root=document.createDocumentFragment(); const tools=document.createElement('div');tools.className='toolbar';
+    tools.append(actionButton('解锁全部 6 档难度',()=>{d.difficultyProgressions.forEach(x=>x.isUnlocked=true);onValueChanged(true);toast('全部现有难度条目已解锁');},'primary'));root.append(tools);
+    const top=card('当前难度与 Unfair+','ID 是游戏资产引用；除非你知道对应关系，不建议手填不存在的 ID。');const g=document.createElement('div');g.className='form-grid';g.append(controlNumber('Current Difficulty ID',d.currentDifficultyId,v=>d.currentDifficultyId=v),controlNumber('Current Unfair+ Level',d.currentUnfairPlusLevel,v=>d.currentUnfairPlusLevel=v,{min:0}),controlNumber('Max Unlocked Unfair+ Level',d.maxUnlockedUnfairPlusLevel,v=>d.maxUnlockedUnfairPlusLevel=v,{min:0}));top.append(g);root.append(top);
+    root.append(sectionTitle('难度条目'));const grid=document.createElement('div');grid.className='card-grid';d.difficultyProgressions.forEach((x,i)=>{const c=card(`难度 ${i+1}`,`Difficulty ID: ${x.difficultyId}`);c.append(switchRow('已解锁','只修改现有条目的解锁状态',x.isUnlocked,v=>x.isUnlocked=v));grid.append(c);});root.append(grid);els.editorBody.replaceChildren(root);
+  },
+  maps(file) {
+    const d=file.value.data, root=document.createDocumentFragment();const knownDiff=getKnownDifficultyIds();const tools=document.createElement('div');tools.className='toolbar';
+    tools.append(actionButton('解锁全部地图',()=>{d.mapProgressions.forEach(x=>x.isUnlocked=true);onValueChanged(true);},'primary'));
+    if(knownDiff.length) tools.append(actionButton('把已知难度写入所有地图',()=>{d.mapProgressions.forEach(x=>x.unlockedDifficultyIds=[...knownDiff]);onValueChanged(true);toast(`已写入 ${knownDiff.length} 个难度 ID`);},'secondary'));root.append(tools);
+    const top=card('地图选择','currentMapId = 0 通常表示未选择/默认状态。');const g=document.createElement('div');g.className='form-grid';g.append(controlNumber('Current Map ID',d.currentMapId,v=>d.currentMapId=v));top.append(g);root.append(top);
+    const grid=document.createElement('div');grid.className='card-grid';d.mapProgressions.forEach((m,i)=>{const c=card(`地图 ${i+1}`,`Map ID: ${m.mapId}`);c.append(switchRow('地图已解锁',`${m.unlockedDifficultyIds.length} 个难度 ID`,m.isUnlocked,v=>m.isUnlocked=v));const fld=controlText('Unlocked Difficulty IDs（逗号分隔）',m.unlockedDifficultyIds.join(', '),v=>{m.unlockedDifficultyIds=v.split(',').map(s=>Number(s.trim())).filter(Number.isFinite)});fld.style.marginTop='12px';c.append(fld);grid.append(c);});root.append(grid);els.editorBody.replaceChildren(root);
+  },
+  relics(file) {
+    const d=file.value.data, root=document.createDocumentFragment();root.append(newNotice('当前样本中 ownedRelics 与 activeRelics 都是空数组，因此网站不会猜测“新增遗物对象”的结构；已有 ID/对象仍可在高级 JSON 中编辑。','warning'));
+    const c=card('遗物概览','只展示已经存在于文件里的条目。');c.innerHTML+=`<div class="form-grid"><div class="field"><label>Owned Relics</label><input type="text" disabled value="${d.ownedRelics.length} 个"></div><div class="field"><label>Presets</label><input type="text" disabled value="${d.presets.length} 个"></div></div>`;root.append(c);
+    const grid=document.createElement('div');grid.className='card-grid';d.presets.forEach((p,i)=>{const x=card(`Preset ${p.presetIndex ?? i}`,`Class ID: ${p.classId}`);x.innerHTML+=`<div class="sub">Active Relics: ${p.activeRelics?.length || 0}</div>`;grid.append(x);});root.append(grid);els.editorBody.replaceChildren(root);
+  },
+  skills(file) { renderIdArray(file,'DiscoveredSkillIds','已发现技能 ID','技能 ID 需要来自游戏真实资源；不要用“999999”之类随机数充当技能。'); },
+  achievements(file) {
+    const d=file.value.data,root=document.createDocumentFragment();root.append(renderIdArrayBlock(d.unlockedAchievementIds,'已解锁 Achievement IDs',()=>onValueChanged(true)));
+    root.append(sectionTitle('统计计数器'));const grid=document.createElement('div');grid.className='card-grid';d.statCounters.forEach((s,i)=>{const c=card(`Stat ${i+1}`,`Stat ID: ${s.statId}`);const g=document.createElement('div');g.className='form-grid';g.append(controlNumber('Value',s.value,v=>s.value=v,{min:0}));c.append(g);grid.append(c);});root.append(grid);els.editorBody.replaceChildren(root);
+  },
+  onboarding(file) {
+    const d=file.value.data,root=document.createDocumentFragment();const c=card('教程 / 首次启动状态','适合修复教程状态卡住，但布尔含义以游戏版本为准。');c.append(switchRow('First Game','false 表示已经不是第一次进入游戏',d.firstGame,v=>d.firstGame=v),switchRow('Onboarding Relics Completed','遗物教程是否完成',d.onboardingRelicsCompleted,v=>d.onboardingRelicsCompleted=v));const g=document.createElement('div');g.className='form-grid';g.style.marginTop='12px';g.append(controlNumber('Current Onboarding Phase Index',d.currentOnboardingPhaseIndex,v=>d.currentOnboardingPhaseIndex=v));c.append(g);root.append(c);els.editorBody.replaceChildren(root);
+  },
+  run(file) {
+    const d=file.value.data, root=document.createDocumentFragment();root.append(newNotice('这是“当前一局/续局快照”，不是永久职业成长。hasActiveRun=false 时大部分数值通常不会影响主界面永久进度。','warning'));
+    const basic=card('Run 基础状态','修改 Run 快照风险高于永久进度，建议保留原始文件。');basic.append(switchRow('Has Active Run','是否存在可继续的 Run',d.hasActiveRun,v=>d.hasActiveRun=v));const g=document.createElement('div');g.className='form-grid';g.style.marginTop='12px';g.append(controlNumber('Seed',d.seed,v=>d.seed=v),controlNumber('Room Index',d.roomIndex,v=>d.roomIndex=v,{min:0}),controlNumber('Max Room Index',d.maxRoomIndex,v=>d.maxRoomIndex=v,{min:0}),controlNumber('Endless Room Index',d.endlessRoomIndex,v=>d.endlessRoomIndex=v,{min:0}),controlNumber('Player Level',d.playerLevel,v=>d.playerLevel=v,{min:0}),controlNumber('Player XP',d.playerXp,v=>d.playerXp=v,{min:0,step:'any'}),controlNumber('Player HP',d.playerHp,v=>d.playerHp=v,{step:'any'}));basic.append(g);root.append(basic);
+    const rs=card('Run Stats','通常用于本局统计/结算。');const rg=document.createElement('div');rg.className='form-grid';['totalKills','totalEliteKills','roomsCompleted','relicsCollected','classXpGained','totalDuration','totalDamageTaken','totalDamageDealt'].forEach(k=>rg.append(controlNumber(k,d.runStats[k],v=>d.runStats[k]=v,{min:0,step:'any'})));rs.append(rg);root.append(rs);els.editorBody.replaceChildren(root);
+  },
+  inventory(file) {
+    const inv=file.value,root=document.createDocumentFragment();const cells=inv._cells||[];const unlocked=cells.filter(c=>inventoryCellState(inv,c).unlocked).length;const tools=document.createElement('div');tools.className='toolbar';tools.append(actionButton('解锁全部 Inventory 格子',()=>{const n=unlockAllInventoryCells(inv);onValueChanged(true);toast(n?`已解锁 ${n} 个格子`:'当前已经全部解锁');},'primary'));root.append(tools);
+    root.append(newNotice(`当前 Inventory 为 ${inv._size?.x || '?'} × ${inv._size?.y || '?'}，共 ${cells.length} 格；当前可用 ${unlocked} 格。样本中 _items 为空，因此这里只修改格子锁定状态，不生成未知 Item 对象。`));
+    root.append(sectionTitle('Inventory 网格 · 点击有锁属性的格子切换锁定'));const grid=document.createElement('div');grid.className='inventory-grid';
+    cells.forEach((c)=>{const st=inventoryCellState(inv,c);const cell=document.createElement('div');cell.className=`inv-cell ${st.unlocked?'unlocked':''} ${st.editable?'':'readonly'}`;cell.innerHTML=`<span class="state">${st.unlocked?'已解锁':'锁定'}</span><span class="coord">${c._position?.x}, ${c._position?.y}</span>${st.editable?'<button aria-label="toggle"></button>':''}`;if(st.editable)cell.querySelector('button').onclick=()=>{setInventoryCellUnlocked(inv,c,!st.unlocked);onValueChanged(true);};grid.append(cell);});root.append(grid);els.editorBody.replaceChildren(root);
+  },
+  raw(file) { els.editorBody.replaceChildren(newNotice('没有匹配到已知模块。你仍可以在下方高级 JSON 中编辑，下载时会按原文件的编码方式重新写回。','warning')); },
+};
+
+function renderIdArray(file,key,title,note) {
+  const d=file.value.data,root=document.createDocumentFragment(); if(note)root.append(newNotice(note,'warning'));root.append(renderIdArrayBlock(d[key],title,()=>onValueChanged(true)));els.editorBody.replaceChildren(root);
+}
+function renderIdArrayBlock(arr,title,onMutate){const wrap=card(title,`${arr.length} 个条目`);const tools=document.createElement('div');tools.className='toolbar';const inp=document.createElement('input');inp.type='number';inp.placeholder='输入一个真实 ID';inp.style.maxWidth='260px';const add=actionButton('添加 ID',()=>{const v=Number(inp.value);if(!Number.isFinite(v))return toast('请输入有效数字 ID');if(!arr.includes(v))arr.push(v);inp.value='';onMutate();},'primary');tools.append(inp,add);wrap.append(tools);const list=document.createElement('div');list.className='id-list';arr.forEach((v,i)=>{const r=document.createElement('div');r.className='id-row';r.innerHTML=`<code>${escapeHtml(String(v))}</code>`;const b=document.createElement('button');b.className='mini-btn';b.textContent='删除';b.onclick=()=>{arr.splice(i,1);onMutate();};r.append(b);list.append(r);});wrap.append(list);return wrap;}
+function newNotice(text,type=''){const d=document.createElement('div');d.className=`notice ${type}`;d.textContent=text;return d;}
+function getKnownDifficultyIds(){for(const f of state.files){if(f.module==='difficulty')return f.value.data.difficultyProgressions.map(x=>x.difficultyId);}return [];}
+function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+
+function downloadBytes(bytes, filename) { const blob=new Blob([bytes],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function downloadEdited(){const f=getCurrent();if(!f)return;const bytes=encodeSaveValue(f.value,f.mode);downloadBytes(bytes,f.name);toast(`已生成 ${f.name}`);}
+function downloadBackup(){const f=getCurrent();if(!f)return;downloadBytes(f.rawBytes,`${f.name}.original-backup`);toast('已下载原始字节备份');}
+function resetCurrent(){const f=getCurrent();if(!f)return;f.value=deepClone(f.originalValue);f.dirty=false;renderAll();toast('当前文件已恢复到载入时状态');}
+
+els.pickFilesBtn.onclick=()=>els.fileInput.click(); els.addMoreBtn.onclick=()=>els.fileInput.click(); els.pickFolderBtn.onclick=()=>els.folderInput.click();
+els.fileInput.onchange=(e)=>ingestFiles(e.target.files);els.folderInput.onchange=(e)=>ingestFiles(e.target.files);
+['dragenter','dragover'].forEach(ev=>els.dropzone.addEventListener(ev,e=>{e.preventDefault();els.dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>els.dropzone.addEventListener(ev,e=>{e.preventDefault();els.dropzone.classList.remove('drag');}));
+els.dropzone.addEventListener('drop',e=>ingestFiles(e.dataTransfer.files));
+els.dropzone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();els.fileInput.click();}});
+els.downloadCurrentBtn.onclick=downloadEdited;els.downloadBackupBtn.onclick=downloadBackup;els.resetCurrentBtn.onclick=resetCurrent;
+els.clearBtn.onclick=()=>{state.files=[];state.currentId=null;els.workspace.classList.add('hidden');els.hero.classList.remove('hidden');els.fileInput.value='';els.folderInput.value='';};
+els.formatJsonBtn.onclick=()=>{try{els.rawJson.value=JSON.stringify(JSON.parse(els.rawJson.value),null,2);toast('JSON 已格式化');}catch(e){toast(`JSON 格式错误：${e.message}`)}};
+els.applyJsonBtn.onclick=()=>{const f=getCurrent();if(!f)return;try{const obj=JSON.parse(els.rawJson.value);f.value=obj;f.module=detectModule(obj,f.name);setDirty(f);renderAll();toast('高级 JSON 已应用');}catch(e){toast(`JSON 格式错误：${e.message}`)}};
+
+</script>
+</body>
+</html>
